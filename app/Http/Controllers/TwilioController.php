@@ -14,6 +14,7 @@ class TwilioController extends Controller
 
         // 🟢 Pull data from request
         $carTitle = $request->input('carTitle');
+        $carPrice = $request->input('price');
         $firstName = $request->input('firstName');
         $lastName = $request->input('lastName');
         $contactMode = $request->input('contactMode');
