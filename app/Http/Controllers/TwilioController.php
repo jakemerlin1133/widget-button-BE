@@ -14,7 +14,7 @@ class TwilioController extends Controller
 
         // 🟢 Pull data from request
         $carTitle = $request->input('carTitle');
-        $carPrice = $request->input('price');
+        $carPrice = $request->input('carPrice');
         $firstName = $request->input('firstName');
         $lastName = $request->input('lastName');
         $contactMode = $request->input('contactMode');
@@ -22,9 +22,9 @@ class TwilioController extends Controller
         $comment = $request->input('comment');
 
         // 🟢 Format the SMS message
-        $body = "Hello {$firstName} {$lastName},\n".
-            "Thank you for your interest in the {$carTitle}.\n".
-            "The current price of this vehicle is \${$carPrice}.\n".
+        $body = "Hello {$firstName} {$lastName}, ".
+            "thank you for your interest in the {$carTitle}. ".
+            "The current price of this vehicle is {$carPrice}. ".
             "We will contact you shortly via your preferred method ({$contactMode}).";
         // 🟢 Use `phone` from the user as the recipient (or use fixed if needed)
         $to = $phone;
