@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use App\Models\OtpVerification;
+use Illuminate\Support\Facades\Http;
 
 class TwilioController extends Controller
 {
@@ -15,7 +16,7 @@ class TwilioController extends Controller
 
         $rawPhone = $request->input('phone');
 
-        // Sanitize and format phone number to E.164 (assume US)
+        // Sanitize and format to E.164 (US numbers)
         $digitsOnly = preg_replace('/\D+/', '', $rawPhone);
 
         if (strlen($digitsOnly) === 10) {
@@ -28,48 +29,48 @@ class TwilioController extends Controller
             ], 422);
         }
 
+        // Get client info
+        $clientIp = $request->ip();
+
         // Generate 6-digit OTP
         $otp = rand(100000, 999999);
 
-        // Message body with OTP
-        $body = "Your verification code is: {$otp}";
+        $message = "Your verification code is: {$otp}";
 
         $url = "https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json";
 
-        $data = http_build_query([
+        $data = [
             'To' => $to,
             'From' => $from,
-            'Body' => $body,
-        ]);
+            'Body' => $message,
+        ];
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_USERPWD, "{$sid}:{$token}");
-        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        $response = Http::withBasicAuth($sid, $token)
+            ->asForm()
+            ->post($url, $data);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (curl_errno($ch)) {
-            curl_close($ch);
-            return response()->json(['error' => curl_error($ch)], 500);
+        if (!$response->successful()) {
+            return response()->json([
+                'error' => 'Failed to send OTP',
+                'twilio_response' => $response->json()
+            ], $response->status());
         }
 
-        curl_close($ch);
-
-        // Cache the OTP for 5 minutes if message sent successfully
-        if ($httpCode == 201) {
-            Cache::put('otp_' . $to, $otp, now()->addMinutes(5));
-        }
+        // Save OTP, IP, and expiry in DB
+        OtpVerification::updateOrCreate(
+            ['phone' => $to],
+            [
+                'otp' => $otp,
+                'ip_address' => $clientIp,
+                'expires_at' => now()->addMinutes(5),
+                'attempts' => 0,
+            ]
+        );
 
         return response()->json([
-            'status' => $httpCode == 201 ? 'OTP sent!' : 'Failed',
+            'status' => 'OTP sent successfully!',
             'to' => $to,
-            // 'otp' => $otp, // Remove in production for security
-            'twilio_response' => json_decode($response, true)
-        ], $httpCode);
+            'twilio_response' => $response->json(),
+        ], 201);
     }
 }
