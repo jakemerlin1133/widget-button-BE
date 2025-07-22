@@ -7,4 +7,3 @@ use App\Http\Controllers\VerifyOTPTwilioController;
 Route::post('/send-otp', [TwilioController::class, 'sendOtp']);
 
 Route::post('/verify-otp', [VerifyOTPTwilioController::class, 'verifyOtp']);
-
