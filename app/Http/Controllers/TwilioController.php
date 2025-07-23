@@ -68,7 +68,8 @@ class TwilioController extends Controller
         );
 
         return response()->json([
-            'status' => 'OTP sent successfully!',
+            'status' => true,
+            'message' => 'OTP sent successfully!',
             'to' => $to,
             'twilio_response' => $response->json(),
         ], 201);

@@ -76,7 +76,10 @@ class VerifyOTPTwilioController extends Controller
             // OTP verified
             $otpRecord->delete(); // Clean up after success
 
-            return response()->json(['status' => 'OTP verified successfully!'], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP verified successfully!'
+            ], 200);
 
         } catch (\Throwable $e) {
             Log::error('OTP verification error', [
